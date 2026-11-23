@@ -1,9 +1,6 @@
 from flask import Flask, render_template, request, redirect, flash, session, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import smtplib
 import psycopg2
 import requests
 import csv
@@ -21,9 +18,10 @@ DATABASE_URL = os.environ.get(
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "m1000")
 
-# --- CONFIGURACIÓN DE CORREO (GMAIL SMTP) ---
+# --- CONFIGURACIÓN DE CORREO (API BREVO HTTPS - SIN BLOQUEO SMTP EN RENDER) ---
 CORREO_REMITENTE = os.environ.get("CORREO_REMITENTE", "worldgymmexicofz@gmail.com")
-PASSWORD_APLICACION = os.environ.get("PASSWORD_APLICACION", "msjp vvlt fkhv muld")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email"
 
 # --- CATÁLOGO DE PRECIOS (MXN) ---
 PRECIOS_PLANES = {
@@ -62,95 +60,108 @@ def asegurar_estructura_bd():
     except Exception as e:
         print("Aviso al verificar estructura de BD:", e)
 
-# Se ejecuta al cargar el módulo con Gunicorn o en ejecución directa
 asegurar_estructura_bd()
+
+# --- ENVÍO DE CORREO VÍA BREVO API ---
+def enviar_correo_brevo(destinatario, asunto, html_content, texto_plano):
+    if not BREVO_API_KEY.strip():
+        return False, "Falta configurar BREVO_API_KEY en Render"
+
+    payload = {
+        "sender": {
+            "name": "World Gym México",
+            "email": CORREO_REMITENTE
+        },
+        "to": [
+            {"email": destinatario}
+        ],
+        "subject": asunto,
+        "htmlContent": html_content,
+        "textContent": texto_plano
+    }
+
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY.strip(),
+        "content-type": "application/json"
+    }
+
+    try:
+        resp = requests.post(BREVO_ENDPOINT, json=payload, headers=headers, timeout=12)
+        if resp.status_code in (200, 201, 202):
+            return True, "Enviado"
+        return False, f"Brevo HTTP {resp.status_code}: {resp.text}"
+    except Exception as e:
+        print("Error enviando correo con Brevo:", e)
+        return False, str(e)
 
 # --- FUNCIÓN PARA ENVIAR CORREO DE BIENVENIDA ---
 def enviar_correo_bienvenida(destinatario, nombre, apellido, membresia, codigo_acceso):
-    if not CORREO_REMITENTE or not PASSWORD_APLICACION or "xxxx" in PASSWORD_APLICACION:
-        return False, "Falta configurar tu correo y contraseña de aplicación"
-
     precio = obtener_precio_plan(membresia)
+    asunto = f"Bienvenido a World Gym México - Tu Código de Acceso ({codigo_acceso})"
 
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Bienvenido a World Gym México - Tu Código de Acceso ({codigo_acceso})"
-        msg["From"] = f"World Gym México <{CORREO_REMITENTE}>"
-        msg["To"] = destinatario
+    texto_plano = (
+        f"¡Hola {nombre} {apellido}!\n\n"
+        f"Bienvenido a World Gym México. Tu registro se ha completado con éxito.\n\n"
+        f"Datos de tu membresía:\n"
+        f"- Plan: {membresia} (${precio:,.2f} MXN)\n"
+        f"- Correo registrado: {destinatario}\n"
+        f"- Código de acceso único: {codigo_acceso}\n\n"
+        f"Para entrar a tu Portal de Socios y ver los días restantes de tu plan:\n"
+        f"1. Ingresa al portal y selecciona la pestaña 'Registrarse'.\n"
+        f"2. Captura tu correo y tu código de acceso ({codigo_acceso}).\n"
+        f"3. Crea tu contraseña personal y listo.\n\n"
+        f"¡Nos vemos entrenando!\nWorld Gym México"
+    )
 
-        texto_plano = (
-            f"¡Hola {nombre} {apellido}!\n\n"
-            f"Bienvenido a World Gym México. Tu registro se ha completado con éxito.\n\n"
-            f"Datos de tu membresía:\n"
-            f"- Plan: {membresia} (${precio:,.2f} MXN)\n"
-            f"- Correo registrado: {destinatario}\n"
-            f"- Código de acceso único: {codigo_acceso}\n\n"
-            f"Para entrar a tu Portal de Socios y ver los días restantes de tu plan:\n"
-            f"1. Ingresa al portal y selecciona la pestaña 'Registrarse'.\n"
-            f"2. Captura tu correo y tu código de acceso ({codigo_acceso}).\n"
-            f"3. Crea tu contraseña personal y listo.\n\n"
-            f"¡Nos vemos entrenando!\nWorld Gym México"
-        )
+    html = f"""
+    <html>
+      <body style="margin:0; padding:24px; background-color:#09090b; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color:#f4f4f5;">
+        <div style="max-width:520px; margin:0 auto; background-color:#131318; border:1px solid #272732; border-top:4px solid #ff003c; border-radius:14px; padding:28px;">
+          <h2 style="margin:0 0 6px 0; text-align:center; letter-spacing:2px; text-transform:uppercase; color:#ffffff;">
+            🏋️ WORLD <span style="color:#ff003c;">GYM</span> MÉXICO
+          </h2>
+          <p style="margin:0 0 22px 0; text-align:center; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:#a1a1aa;">
+            Confirmación de Registro de Socio
+          </p>
 
-        html = f"""
-        <html>
-          <body style="margin:0; padding:24px; background-color:#09090b; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color:#f4f4f5;">
-            <div style="max-width:520px; margin:0 auto; background-color:#131318; border:1px solid #272732; border-top:4px solid #ff003c; border-radius:14px; padding:28px;">
-              <h2 style="margin:0 0 6px 0; text-align:center; letter-spacing:2px; text-transform:uppercase; color:#ffffff;">
-                🏋️ WORLD <span style="color:#ff003c;">GYM</span> MÉXICO
-              </h2>
-              <p style="margin:0 0 22px 0; text-align:center; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:#a1a1aa;">
-                Confirmación de Registro de Socio
-              </p>
+          <p style="font-size:15px; line-height:1.6; color:#e4e4e7;">
+            ¡Hola <strong>{nombre} {apellido}</strong>! Tu inscripción en <strong>World Gym México</strong> ha quedado registrada correctamente.
+          </p>
 
-              <p style="font-size:15px; line-height:1.6; color:#e4e4e7;">
-                ¡Hola <strong>{nombre} {apellido}</strong>! Tu inscripción en <strong>World Gym México</strong> ha quedado registrada correctamente.
-              </p>
+          <div style="background-color:#1c1c24; border:1px solid #272732; border-radius:10px; padding:18px; margin:20px 0;">
+            <p style="margin:0 0 8px 0; font-size:13px; color:#a1a1aa;">PLAN CONTRATADO</p>
+            <p style="margin:0 0 14px 0; font-size:16px; font-weight:700; color:#ffffff;">{membresia} (${precio:,.2f} MXN)</p>
 
-              <div style="background-color:#1c1c24; border:1px solid #272732; border-radius:10px; padding:18px; margin:20px 0;">
-                <p style="margin:0 0 8px 0; font-size:13px; color:#a1a1aa;">PLAN CONTRATADO</p>
-                <p style="margin:0 0 14px 0; font-size:16px; font-weight:700; color:#ffffff;">{membresia} (${precio:,.2f} MXN)</p>
+            <p style="margin:0 0 8px 0; font-size:13px; color:#a1a1aa;">CORREO DE REGISTRO</p>
+            <p style="margin:0 0 14px 0; font-size:15px; color:#f4f4f5;">{destinatario}</p>
 
-                <p style="margin:0 0 8px 0; font-size:13px; color:#a1a1aa;">CORREO DE REGISTRO</p>
-                <p style="margin:0 0 14px 0; font-size:15px; color:#f4f4f5;">{destinatario}</p>
-
-                <p style="margin:0 0 8px 0; font-size:13px; color:#a1a1aa;">TU CÓDIGO DE ACCESO ÚNICO</p>
-                <div style="background-color:#09090b; border:1px dashed #ff003c; border-radius:8px; padding:12px; text-align:center; font-size:22px; font-weight:800; letter-spacing:2px; color:#ff003c;">
-                  {codigo_acceso}
-                </div>
-              </div>
-
-              <p style="font-size:14px; line-height:1.6; color:#d4d4d8;">
-                <strong>¿Cómo activar tu Portal de Socios?</strong><br>
-                1. Entra a la plataforma y abre la pestaña <strong>Registrarse</strong>.<br>
-                2. Ingresa tu correo y el código de acceso de arriba.<br>
-                3. Crea tu contraseña personal para consultar tu vigencia en cualquier momento.
-              </p>
-
-              <hr style="border:none; border-top:1px solid #272732; margin:22px 0;">
-              <p style="margin:0; text-align:center; font-size:12px; color:#71717a;">
-                World Gym México · Mensaje automático de registro
-              </p>
+            <p style="margin:0 0 8px 0; font-size:13px; color:#a1a1aa;">TU CÓDIGO DE ACCESO ÚNICO</p>
+            <div style="background-color:#09090b; border:1px dashed #ff003c; border-radius:8px; padding:12px; text-align:center; font-size:22px; font-weight:800; letter-spacing:2px; color:#ff003c;">
+              {codigo_acceso}
             </div>
-          </body>
-        </html>
-        """
+          </div>
 
-        msg.attach(MIMEText(texto_plano, "plain", "utf-8"))
-        msg.attach(MIMEText(html, "html", "utf-8"))
+          <p style="font-size:14px; line-height:1.6; color:#d4d4d8;">
+            <strong>¿Cómo activar tu Portal de Socios?</strong><br>
+            1. Entra a la plataforma y abre la pestaña <strong>Registrarse</strong>.<br>
+            2. Ingresa tu correo y el código de acceso de arriba.<br>
+            3. Crea tu contraseña personal para consultar tu vigencia en cualquier momento.
+          </p>
 
-        clave_limpia = PASSWORD_APLICACION.replace(" ", "")
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as servidor:
-            servidor.login(CORREO_REMITENTE, clave_limpia)
-            servidor.sendmail(CORREO_REMITENTE, destinatario, msg.as_string())
+          <hr style="border:none; border-top:1px solid #272732; margin:22px 0;">
+          <p style="margin:0; text-align:center; font-size:12px; color:#71717a;">
+            World Gym México · Mensaje automático de registro
+          </p>
+        </div>
+      </body>
+    </html>
+    """
 
-        return True, "Enviado"
-    except Exception as e:
-        print("Error enviando correo:", e)
-        return False, str(e)
+    return enviar_correo_brevo(destinatario, asunto, html, texto_plano)
 
-# --- CONSTRUIR CORREO DE ALERTA DE VENCIMIENTO ---
-def crear_mensaje_vencimiento(destinatario, nombre, apellido, membresia, dias_restantes):
+# --- CONSTRUIR CONTENIDO DE ALERTA DE VENCIMIENTO ---
+def crear_contenido_vencimiento(nombre, apellido, membresia, dias_restantes):
     precio = obtener_precio_plan(membresia)
 
     if dias_restantes <= 0:
@@ -164,11 +175,6 @@ def crear_mensaje_vencimiento(destinatario, nombre, apellido, membresia, dias_re
         titulo_estado = f"⏳ VENCE EN {dias_restantes} {dia_txt.upper()}"
         color_estado = "#f59e0b"
         detalle_estado = f"Te quedan {dias_restantes} {dia_txt} de vigencia en tu plan. Renueva antes de la fecha límite para evitar interrupciones en tu acceso."
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = asunto
-    msg["From"] = f"World Gym México <{CORREO_REMITENTE}>"
-    msg["To"] = destinatario
 
     texto_plano = (
         f"¡Hola {nombre} {apellido}!\n\n"
@@ -218,9 +224,7 @@ def crear_mensaje_vencimiento(destinatario, nombre, apellido, membresia, dias_re
     </html>
     """
 
-    msg.attach(MIMEText(texto_plano, "plain", "utf-8"))
-    msg.attach(MIMEText(html, "html", "utf-8"))
-    return msg
+    return asunto, html, texto_plano
 
 # --- PROTECCIÓN DE RUTAS ADMIN ---
 def login_required(f):
@@ -472,18 +476,38 @@ def agregar():
             palabra = respuesta.json()[0].upper()
             codigo_promo = f"{palabra}-{membresia[:3].upper()}"
     except:
-        pass 
+        pass
 
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     try:
-        consulta = """
-            INSERT INTO clientes (nombre, apellido, email, telefono, tipo_membresia, codigo_acceso, estatus)
-            VALUES (%s, %s, %s, %s, %s, %s, 'Activo')
-            RETURNING id;
-        """
-        cursor.execute(consulta, (nombre, apellido, email, telefono, membresia, codigo_promo))
-        nuevo_cliente_id = cursor.fetchone()[0]
+        cursor.execute("SELECT id, estatus FROM clientes WHERE LOWER(email) = LOWER(%s);", (email,))
+        existente = cursor.fetchone()
+
+        if existente:
+            cliente_id, estatus_actual = existente
+            if estatus_actual == 'Activo':
+                flash('Ese correo electrónico ya pertenece a un socio activo.', 'error')
+                return redirect('/panel_admin')
+            else:
+                cursor.execute("""
+                    UPDATE clientes
+                    SET nombre = %s, apellido = %s, email = %s, telefono = %s,
+                        tipo_membresia = %s, codigo_acceso = %s, estatus = 'Activo',
+                        fecha_registro = CURRENT_TIMESTAMP, password = NULL
+                    WHERE id = %s;
+                """, (nombre, apellido, email, telefono, membresia, codigo_promo, cliente_id))
+                nuevo_cliente_id = cliente_id
+                accion_msg = "Cliente reactivado"
+        else:
+            consulta = """
+                INSERT INTO clientes (nombre, apellido, email, telefono, tipo_membresia, codigo_acceso, estatus)
+                VALUES (%s, %s, %s, %s, %s, %s, 'Activo')
+                RETURNING id;
+            """
+            cursor.execute(consulta, (nombre, apellido, email, telefono, membresia, codigo_promo))
+            nuevo_cliente_id = cursor.fetchone()[0]
+            accion_msg = "Cliente registrado"
 
         cursor.execute(
             "INSERT INTO historial_pagos (cliente_id, monto, metodo_pago) VALUES (%s, %s, %s);",
@@ -493,12 +517,12 @@ def agregar():
 
         enviado, detalle = enviar_correo_bienvenida(email, nombre, apellido, membresia, codigo_promo)
         if enviado:
-            flash(f'Cliente registrado (+${monto:,.0f} MXN en {metodo_pago}) y correo enviado a {email}. Código: {codigo_promo}', 'success')
+            flash(f'{accion_msg} (+${monto:,.0f} MXN en {metodo_pago}) y correo enviado a {email}. Código: {codigo_promo}', 'success')
         else:
-            flash(f'Cliente registrado (+${monto:,.0f} MXN, Código: {codigo_promo}), pero el correo no se envió: {detalle}', 'error')
-    except psycopg2.IntegrityError:
+            flash(f'{accion_msg} (+${monto:,.0f} MXN, Código: {codigo_promo}), pero el correo no se envió: {detalle}', 'error')
+    except Exception as e:
         conexion.rollback()
-        flash('Ese correo electrónico ya está registrado.', 'error')
+        flash(f'Error al registrar cliente: {e}', 'error')
     finally:
         cursor.close()
         conexion.close()
@@ -633,27 +657,23 @@ def notificar_vencimientos():
 
     enviados = 0
     fallidos = 0
-    clave_limpia = PASSWORD_APLICACION.replace(" ", "")
+    ultimo_error = ""
 
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as servidor:
-            servidor.login(CORREO_REMITENTE, clave_limpia)
-            for nombre, apellido, email, membresia, dias in socios_en_riesgo:
-                try:
-                    msg = crear_mensaje_vencimiento(email.strip(), nombre, apellido, membresia, dias)
-                    servidor.sendmail(CORREO_REMITENTE, email.strip(), msg.as_string())
-                    enviados += 1
-                except Exception as err_envio:
-                    print(f"No se pudo enviar alerta a {email}: {err_envio}")
-                    fallidos += 1
-
-        if fallidos == 0:
-            flash(f'Se enviaron {enviados} correos de alerta de vencimiento correctamente.', 'success')
+    for nombre, apellido, email, membresia, dias in socios_en_riesgo:
+        asunto, html, texto_plano = crear_contenido_vencimiento(nombre, apellido, membresia, dias)
+        ok, detalle = enviar_correo_brevo(email.strip(), asunto, html, texto_plano)
+        if ok:
+            enviados += 1
         else:
-            flash(f'Se enviaron {enviados} correos y fallaron {fallidos} (revisa correos inválidos en la tabla).', 'error')
-    except Exception as e:
-        print("Error de conexión SMTP en alertas:", e)
-        flash(f'Error al conectar con Gmail para enviar alertas: {e}', 'error')
+            fallidos += 1
+            ultimo_error = detalle
+
+    if fallidos == 0:
+        flash(f'Se enviaron {enviados} correos de alerta de vencimiento correctamente.', 'success')
+    elif enviados == 0:
+        flash(f'No se pudieron enviar las alertas ({fallidos} pendientes): {ultimo_error}', 'error')
+    else:
+        flash(f'Se enviaron {enviados} correos y fallaron {fallidos}. Último detalle: {ultimo_error}', 'error')
 
     return redirect('/panel_admin')
 
