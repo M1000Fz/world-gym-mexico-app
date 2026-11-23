@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Mi Portal - World Gym Mexico</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --bg-main: #09090b;
+            --bg-card: #131318;
+            --bg-input: #1c1c24;
+            --border: #272732;
+            --red: #ff003c;
+            --red-hover: #d90033;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --green: #34d399;
+            --amber: #fbbf24;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(circle at top center, rgba(255, 0, 60, 0.16), transparent 45%);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container { width: 100%; max-width: 460px; }
+
+        .header-title { text-align: center; margin-bottom: 24px; }
+        .header-title h2 { font-size: 1.9rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+        .header-title h2 span { color: var(--red); }
+        .header-title p { color: var(--text-muted); font-size: 0.82rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 0, 60, 0.35);
+            border-radius: 16px;
+            padding: 32px 28px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .form-group { margin-bottom: 18px; }
+
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input:focus {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(255, 0, 60, 0.2);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 13px;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-red {
+            background: var(--red);
+            color: #fff;
+            border: none;
+            box-shadow: 0 6px 20px rgba(255, 0, 60, 0.35);
+        }
+        .btn-red:hover { background: var(--red-hover); transform: translateY(-1px); }
+
+        .btn-outline-red {
+            background: transparent;
+            color: #ff4d79;
+            border: 1px solid rgba(255, 0, 60, 0.45);
+        }
+        .btn-outline-red:hover { background: var(--red); color: #fff; }
+
+        .dash { text-align: center; }
+        .dash h4 { font-size: 1.4rem; margin-bottom: 6px; }
+        .plan-tag { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px; }
+        .plan-tag span { color: var(--red); font-weight: 700; }
+
+        .status-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px 18px;
+            margin-bottom: 24px;
+        }
+        .status-label { font-size: 0.78rem; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+        .status-val { font-size: 1.9rem; font-weight: 800; }
+        .val-vip { color: var(--amber); }
+        .val-ok { color: var(--green); }
+        .val-danger { color: var(--red); }
+        .warn-msg { color: #fb7185; font-size: 0.82rem; margin-top: 8px; }
+
+        /* BARRA DE PROGRESO */
+        .progress-track {
+            width: 100%;
+            height: 10px;
+            background: #272732;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 0.5s ease;
+        }
+        .fill-vip { background: linear-gradient(90deg, #f59e0b, #fde047); }
+        .fill-ok { background: linear-gradient(90deg, #10b981, #34d399); }
+        .fill-warn { background: linear-gradient(90deg, #f97316, #fbbf24); }
+        .fill-danger { background: linear-gradient(90deg, #ff003c, #fb7185); }
+
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-title">
+        <h2>🏋️ WORLD <span>GYM</span></h2>
+        <p>Portal de Socios</p>
+    </div>
+
+    <div class="card">
+        {% if vista == 'login' %}
+            <form action="/login_cliente" method="POST">
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Código de Acceso</label>
+                    <input type="text" name="codigo" placeholder="EJ: TIGER-MEN" style="text-transform: uppercase;" required>
+                </div>
+                <button type="submit" class="btn btn-red">Consultar Membresía</button>
+            </form>
+        {% elif vista == 'dashboard' %}
+            {% set total_dias = 365 if datos.membresia == 'Anual' else (90 if datos.membresia == 'Trimestral' else 30) %}
+            {% if datos.membresia == 'VIP' %}
+                {% set pct = 100 %}
+                {% set bar_class = 'fill-vip' %}
+            {% elif datos.dias <= 0 %}
+                {% set pct = 0 %}
+                {% set bar_class = 'fill-danger' %}
+            {% else %}
+                {% set raw_pct = ((datos.dias / total_dias) * 100) | round | int %}
+                {% set pct = 100 if raw_pct > 100 else (0 if raw_pct < 0 else raw_pct) %}
+                {% set bar_class = 'fill-danger' if datos.dias <= 5 else ('fill-warn' if pct <= 35 else 'fill-ok') %}
+            {% endif %}
+
+            <div class="dash">
+                <h4>{{ datos.nombre }}</h4>
+                <div class="plan-tag">PLAN: <span>{{ datos.membresia }}</span></div>
+
+                <div class="status-box">
+                    <div class="status-label">Estatus de Acceso</div>
+                    {% if datos.membresia == 'VIP' %}
+                        <div class="status-val val-vip">👑 ILIMITADO</div>
+                    {% elif datos.dias <= 0 %}
+                        <div class="status-val val-danger">⛔ VENCIDA</div>
+                    {% elif datos.dias <= 5 %}
+                        <div class="status-val val-danger">⏳ {{ datos.dias }} DÍAS</div>
+                        <div class="warn-msg">Renueva pronto para evitar recargos</div>
+                    {% else %}
+                        <div class="status-val val-ok">✅ {{ datos.dias }} DÍAS</div>
+                    {% endif %}
+
+                    <div class="progress-track">
+                        <div class="progress-fill {{ bar_class }}" style="width: {{ pct }}%;"></div>
+                    </div>
+                    <div class="progress-meta">
+                        <span>Vigencia restante</span>
+                        <span>{{ 'Ilimitada' if datos.membresia == 'VIP' else (pct ~ '%') }}</span>
+                    </div>
+                </div>
+
+                <a href="/logout" class="btn btn-outline-red">Cerrar Sesión</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <script>
+      {% for category, message in messages %}
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'ERROR DE ACCESO',
+                text: '{{ message }}',
+                background: '#131318',
+                color: '#f4f4f5',
+                confirmButtonColor: '#ff003c'
+            });
+        }
+      {% endfor %}
+    </script>
+  {% endif %}
+{% endwith %}
+
+</body>
+</html>

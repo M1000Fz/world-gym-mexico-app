@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Acceso - World Gym Mexico</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --bg-main: #09090b;
+            --bg-card: rgba(19, 19, 24, 0.94);
+            --bg-input: #181820;
+            --border: #272732;
+            --red: #ff003c;
+            --red-hover: #d90033;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(255, 0, 60, 0.18), transparent 45%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 60, 0.10), transparent 45%);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-box {
+            width: 100%;
+            max-width: 430px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 0, 60, 0.35);
+            border-radius: 16px;
+            padding: 32px 30px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 30px rgba(255, 0, 60, 0.12);
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .logo span { color: var(--red); }
+
+        .subtitle {
+            font-size: 0.78rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 22px;
+        }
+
+        /* PESTAÑAS */
+        .tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            background: #111116;
+            padding: 5px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.86rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover { color: #fff; }
+
+        .tab-btn.active {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(255, 0, 60, 0.35);
+        }
+
+        .form-panel { display: none; }
+        .form-panel.active { display: block; }
+
+        .form-group { text-align: left; margin-bottom: 16px; }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.94rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input:focus {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(255, 0, 60, 0.2);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            margin-top: 6px;
+            background: var(--red);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 0, 60, 0.35);
+            transition: all 0.2s ease;
+        }
+
+        .btn-submit:hover { background: var(--red-hover); transform: translateY(-1px); }
+
+        .footer-note {
+            margin-top: 22px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-box">
+    <div class="logo">🏋️ WORLD <span>GYM</span></div>
+    <div class="subtitle">Portal de Socios y Administración</div>
+
+    <!-- PESTAÑAS LOGIN / REGISTRARSE -->
+    <div class="tabs">
+        <button type="button" class="tab-btn active" id="tab-login" onclick="cambiarTab('login')">Iniciar Sesión</button>
+        <button type="button" class="tab-btn" id="tab-signup" onclick="cambiarTab('signup')">Registrarse</button>
+    </div>
+
+    <!-- PANEL 1: INICIAR SESIÓN (CORREO/USUARIO + CONTRASEÑA) -->
+    <div id="panel-login" class="form-panel active">
+        <form action="/" method="POST">
+            <div class="form-group">
+                <label>Correo Electrónico o Usuario</label>
+                <input type="text" name="usuario_correo" placeholder="ejemplo@correo.com" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-submit">Iniciar Sesión</button>
+        </form>
+        <div class="footer-note">
+            ¿Primera vez entrando? Cambia a la pestaña <strong>Registrarse</strong> y activa tu cuenta con el código que te dieron en recepción.
+        </div>
+    </div>
+
+    <!-- PANEL 2: REGISTRARSE (ACTIVAR CUENTA CON CÓDIGO Y CREAR CONTRASEÑA) -->
+    <div id="panel-signup" class="form-panel">
+        <form action="/registro" method="POST">
+            <div class="form-group">
+                <label>Correo Electrónico de Registro</label>
+                <input type="email" name="email" placeholder="El correo que diste en recepción" required>
+            </div>
+            <div class="form-group">
+                <label>Código de Acceso Asignado</label>
+                <input type="text" name="codigo_acceso" placeholder="EJ: TIGER-MEN" style="text-transform: uppercase;" required>
+            </div>
+            <div class="form-group">
+                <label>Crea tu Contraseña</label>
+                <input type="password" name="nueva_password" placeholder="Mínimo 4 caracteres" required>
+            </div>
+            <div class="form-group">
+                <label>Confirmar Contraseña</label>
+                <input type="password" name="confirmar_password" placeholder="Repite tu contraseña" required>
+            </div>
+            <button type="submit" class="btn-submit">Activar mi Cuenta</button>
+        </form>
+        <div class="footer-note">
+            Usa el correo y el código único entregado al inscribirte para configurar tu contraseña personal.
+        </div>
+    </div>
+</div>
+
+<script>
+    function cambiarTab(modo) {
+        document.getElementById('tab-login').classList.toggle('active', modo === 'login');
+        document.getElementById('tab-signup').classList.toggle('active', modo === 'signup');
+        document.getElementById('panel-login').classList.toggle('active', modo === 'login');
+        document.getElementById('panel-signup').classList.toggle('active', modo === 'signup');
+    }
+</script>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <script>
+      {% for category, message in messages %}
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: '{{ "success" if category == "success" else "error" }}',
+                title: 'WORLD GYM',
+                text: '{{ message }}',
+                background: '#131318',
+                color: '#f4f4f5',
+                confirmButtonColor: '#ff003c'
+            });
+        }
+      {% endfor %}
+    </script>
+  {% endif %}
+{% endwith %}
+
+</body>
+</html>

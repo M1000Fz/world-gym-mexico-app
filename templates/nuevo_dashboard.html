@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Dashboard - World Gym Mexico</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --bg-main: #09090b;
+            --bg-card: #131318;
+            --bg-input: #1c1c24;
+            --border: #272732;
+            --red: #ff003c;
+            --red-hover: #d90033;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --green: #10b981;
+            --amber: #f59e0b;
+            --blue: #3b82f6;
+            --emerald: #059669;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(circle at top right, rgba(255, 0, 60, 0.12), transparent 40%);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        .wrapper { max-width: 1440px; margin: 0 auto; }
+
+        /* NAVBAR */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .brand span { color: var(--red); }
+
+        .topbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* KPI CARDS (6 TARJETAS: 3x2 o 6 en pantalla ancha) */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1280px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 680px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 460px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            border-top: 3px solid var(--border);
+        }
+
+        .kpi-card.kpi-emerald { border-top-color: #34d399; background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), var(--bg-card)); }
+        .kpi-card.kpi-blue { border-top-color: var(--blue); }
+        .kpi-card.kpi-green { border-top-color: var(--green); }
+        .kpi-card.kpi-amber { border-top-color: var(--amber); }
+        .kpi-card.kpi-orange { border-top-color: #f97316; }
+        .kpi-card.kpi-red { border-top-color: var(--red); }
+
+        .kpi-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 1.55rem;
+            font-weight: 800;
+            margin-top: 4px;
+            line-height: 1.1;
+        }
+
+        .kpi-value.money { color: #34d399; font-size: 1.35rem; }
+
+        .kpi-sub {
+            font-size: 0.71rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .kpi-icon {
+            font-size: 1.35rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            flex-shrink: 0;
+        }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-red {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(255, 0, 60, 0.35);
+        }
+        .btn-red:hover { background: var(--red-hover); transform: translateY(-1px); }
+
+        .btn-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.35); }
+        .btn-green:hover { background: #10b981; color: #000; }
+
+        .btn-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); }
+        .btn-amber:hover { background: #f59e0b; color: #000; }
+
+        .btn-outline { background: transparent; color: var(--text-main); border-color: var(--border); }
+        .btn-outline:hover { border-color: var(--text-muted); background: rgba(255,255,255,0.05); }
+
+        .btn-outline-red { background: transparent; color: #ff4d79; border-color: rgba(255, 0, 60, 0.4); }
+        .btn-outline-red:hover { background: var(--red); color: #fff; }
+
+        .btn-sm { padding: 6px 9px; font-size: 0.82rem; border-radius: 6px; }
+        .btn-blue { background: rgba(59, 130, 246, 0.18); color: #60a5fa; border-color: rgba(59, 130, 246, 0.35); }
+        .btn-blue:hover { background: #3b82f6; color: #fff; }
+
+        .btn-purple { background: rgba(168, 85, 247, 0.18); color: #c084fc; border-color: rgba(168, 85, 247, 0.35); }
+        .btn-purple:hover { background: #a855f7; color: #fff; }
+
+        .w-100 { width: 100%; }
+
+        /* MAIN GRID */
+        .grid-main {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 1020px) {
+            .grid-main { grid-template-columns: 1fr; }
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 14px 20px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-header.accent { border-left: 4px solid var(--red); color: #fff; }
+        .card-header.money-hdr { border-left: 4px solid var(--green); color: #fff; }
+        .card-body { padding: 20px; }
+
+        /* FORM CONTROLS */
+        .form-group { margin-bottom: 14px; }
+
+        .field-label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="email"], select {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(255, 0, 60, 0.18);
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23a1a1aa' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 34px;
+        }
+
+        /* SEARCH BAR & CHIPS */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .search-bar input { flex: 1; min-width: 200px; }
+        .search-bar select { width: 185px; }
+
+        .chips-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .chip {
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: var(--bg-card);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chip:hover { border-color: var(--text-muted); color: #fff; }
+        .chip.active {
+            background: rgba(255, 0, 60, 0.18);
+            color: #ff4d79;
+            border-color: var(--red);
+        }
+
+        /* TABLE & AVATARS */
+        .table-wrap { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+
+        thead th {
+            text-align: left;
+            padding: 13px 14px;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody td {
+            padding: 13px 14px;
+            border-bottom: 1px solid rgba(39, 39, 50, 0.7);
+            vertical-align: middle;
+        }
+
+        tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+
+        .member-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff003c, #7a1c32);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .subtext { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+        /* BADGES */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+        .badge-vip { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .badge-anual { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+        .badge-std { background: rgba(161, 161, 170, 0.16); color: #d4d4d8; border: 1px solid rgba(161, 161, 170, 0.3); }
+
+        .status-ok { color: #34d399; font-weight: 600; }
+        .status-warn { color: #fb7185; font-weight: 700; }
+        .status-vip { color: #fbbf24; font-weight: 700; }
+
+        .actions-cell { display: flex; gap: 6px; flex-wrap: nowrap; }
+        .empty-row { text-align: center; color: var(--text-muted); padding: 32px !important; }
+        .chart-box { position: relative; height: 220px; display: flex; justify-content: center; }
+
+        /* LISTA DE PAGOS RECIENTES */
+        .pago-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(39, 39, 50, 0.7);
+            font-size: 0.86rem;
+        }
+        .pago-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .pago-monto { color: #34d399; font-weight: 800; font-size: 0.92rem; text-align: right; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <!-- NAVEGACIÓN SUPERIOR -->
+    <header class="topbar">
+        <div class="brand">
+            <span>🏋️</span> World Gym <span>Mexico</span>
+        </div>
+        <div class="topbar-actions">
+            <a href="/exportar" class="btn btn-green">📄 Exportar CSV</a>
+            <a href="/notificar_vencimientos" class="btn btn-amber">🔔 Alertas</a>
+            <a href="/logout" class="btn btn-outline-red">🚪 Salir</a>
+        </div>
+    </header>
+
+    <!-- TARJETAS DE KPI (INCLUYE GANANCIAS) -->
+    <section class="kpi-grid">
+        <div class="kpi-card kpi-emerald">
+            <div>
+                <div class="kpi-label">Ingresos del Mes</div>
+                <div class="kpi-value money">${{ "{:,.0f}".format(kpis.ingresos_mes) }}</div>
+                <div class="kpi-sub">Total: ${{ "{:,.0f}".format(kpis.ingresos_totales) }} MXN</div>
+            </div>
+            <div class="kpi-icon">💰</div>
+        </div>
+        <div class="kpi-card kpi-blue">
+            <div>
+                <div class="kpi-label">Socios Totales</div>
+                <div class="kpi-value">{{ kpis.totales }}</div>
+                <div class="kpi-sub">Padrón registrado</div>
+            </div>
+            <div class="kpi-icon">👥</div>
+        </div>
+        <div class="kpi-card kpi-green">
+            <div>
+                <div class="kpi-label">Socios Activos</div>
+                <div class="kpi-value">{{ kpis.vigentes }}</div>
+                <div class="kpi-sub">Membresía vigente</div>
+            </div>
+            <div class="kpi-icon">✅</div>
+        </div>
+        <div class="kpi-card kpi-amber">
+            <div>
+                <div class="kpi-label">Membresías VIP</div>
+                <div class="kpi-value">{{ kpis.vip }}</div>
+                <div class="kpi-sub">Acceso ilimitado</div>
+            </div>
+            <div class="kpi-icon">👑</div>
+        </div>
+        <div class="kpi-card kpi-orange">
+            <div>
+                <div class="kpi-label">Por Vencer</div>
+                <div class="kpi-value">{{ kpis.por_vencer }}</div>
+                <div class="kpi-sub">5 días o menos</div>
+            </div>
+            <div class="kpi-icon">⏳</div>
+        </div>
+        <div class="kpi-card kpi-red">
+            <div>
+                <div class="kpi-label">Vencidos</div>
+                <div class="kpi-value">{{ kpis.vencidos }}</div>
+                <div class="kpi-sub">Requieren renovación</div>
+            </div>
+            <div class="kpi-icon">⛔</div>
+        </div>
+    </section>
+
+    <div class="grid-main">
+        <!-- COLUMNA IZQUIERDA -->
+        <div>
+            <div class="card">
+                <div class="card-header accent">Nuevo Socio</div>
+                <div class="card-body">
+                    <form action="/agregar" method="POST">
+                        <div class="form-group"><input type="text" name="nombre" placeholder="Nombre" required></div>
+                        <div class="form-group"><input type="text" name="apellido" placeholder="Apellido" required></div>
+                        <div class="form-group"><input type="email" name="email" placeholder="Correo electrónico" required></div>
+                        <div class="form-group"><input type="text" name="telefono" placeholder="Teléfono"></div>
+                        <div class="form-group">
+                            <span class="field-label">Plan de Membresía</span>
+                            <select name="membresia" required>
+                                <option value="Mensual">Mensual — $350 MXN</option>
+                                <option value="Trimestral">Trimestral — $950 MXN</option>
+                                <option value="Anual">Anual — $3,400 MXN</option>
+                                <option value="VIP">VIP (Ilimitado) — $7,500 MXN</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <span class="field-label">Método de Pago</span>
+                            <select name="metodo_pago" required>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-red w-100">+ Registrar y Cobrar</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Membresías Vigentes</div>
+                <div class="card-body">
+                    <div class="chart-box">
+                        <canvas id="graficaMembresias"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header money-hdr">Últimos Pagos</div>
+                <div class="card-body">
+                    {% if ultimos_pagos %}
+                        {% for p in ultimos_pagos %}
+                        <div class="pago-item">
+                            <div>
+                                <strong>{{ p[1] }} {{ p[2] }}</strong>
+                                <span class="subtext">{{ p[3] }} · {{ p[5] }} · {{ p[6] }}</span>
+                            </div>
+                            <div class="pago-monto">+${{ "{:,.0f}".format(p[4]) }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                            Aún no hay cobros registrados. Registra o renueva un socio para ver tus ingresos.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA -->
+        <div>
+            <form action="/panel_admin" method="GET" class="search-bar">
+                <input type="text" name="q" placeholder="Buscar por nombre, apellido o correo..." value="{{ request.args.get('q', '') }}">
+                <select name="estatus">
+                    <option value="Activo" {% if request.args.get('estatus') == 'Activo' %}selected{% endif %}>Padrón Actual</option>
+                    <option value="Inactivo" {% if request.args.get('estatus') == 'Inactivo' %}selected{% endif %}>Dados de Baja</option>
+                </select>
+                <button type="submit" class="btn btn-red">🔍 Filtrar</button>
+                <a href="/panel_admin" class="btn btn-outline">↻ Limpiar</a>
+            </form>
+
+            <!-- FILTROS RÁPIDOS TIPO CHIP -->
+            <div class="chips-bar">
+                <button type="button" class="chip active" onclick="filtrarChip('todos', this)">Todos</button>
+                <button type="button" class="chip" onclick="filtrarChip('vigente', this)">✅ Vigentes</button>
+                <button type="button" class="chip" onclick="filtrarChip('por_vencer', this)">⏳ Por vencer</button>
+                <button type="button" class="chip" onclick="filtrarChip('vencido', this)">⛔ Vencidos</button>
+                <button type="button" class="chip" onclick="filtrarChip('vip', this)">👑 VIP</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header accent">
+                    <span>Directorio de Socios</span>
+                    <span id="contadorVisible" style="color: var(--text-muted); font-size: 0.78rem;">{{ clientes|length }} registros</span>
+                </div>
+                <div class="table-wrap">
+                    <table id="tablaSocios">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Socio</th>
+                                <th>Contacto</th>
+                                <th>Plan</th>
+                                <th>Vigencia</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in clientes %}
+                            {% set es_vip = (c[5]|trim|upper == 'VIP') %}
+                            {% set estado_chip = 'vip' if es_vip else ('vencido' if c[6] <= 0 else ('por_vencer' if c[6] <= 5 else 'vigente')) %}
+                            <tr class="fila-socio" data-estado="{{ estado_chip }}" data-vigente="{{ 'si' if (es_vip or c[6] > 0) else 'no' }}">
+                                <td>#{{ c[0] }}</td>
+                                <td>
+                                    <div class="member-cell">
+                                        <div class="avatar">{{ (c[1][0] if c[1] else '')|upper }}{{ (c[2][0] if c[2] else '')|upper }}</div>
+                                        <div>
+                                            <strong>{{ c[1] }} {{ c[2] }}</strong>
+                                            <span class="subtext">Código: {{ c[7] }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ c[3] }}
+                                    <span class="subtext">{{ c[4] if c[4] else 'Sin teléfono' }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if es_vip %}badge-vip{% elif c[5]|trim|upper == 'ANUAL' %}badge-anual{% else %}badge-std{% endif %}">
+                                        {{ c[5] }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if es_vip %}
+                                        <span class="status-vip">∞ Ilimitado</span>
+                                    {% elif c[6] <= 0 %}
+                                        <span class="status-warn">VENCIDO</span>
+                                    {% elif c[6] <= 5 %}
+                                        <span class="status-warn">{{ c[6] }} días</span>
+                                    {% else %}
+                                        <span class="status-ok">{{ c[6] }} días</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="actions-cell">
+                                        <button type="button" class="btn btn-sm btn-purple" onclick="copiarCodigo('{{ c[7] }}', '{{ c[1] }}')" title="Copiar código de acceso">📋</button>
+                                        <button type="button" class="btn btn-sm btn-green" onclick="confirmarRenovacion({{ c[0] }}, '{{ c[1] }} {{ c[2] }}', '{{ c[5] }}')" title="Renovar membresía hoy">🔄</button>
+                                        <a href="/editar/{{ c[0] }}" class="btn btn-sm btn-blue" title="Editar">✏️</a>
+                                        <button type="button" class="btn btn-sm btn-outline-red" onclick="confirmarBaja({{ c[0] }})" title="Dar de Baja">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not clientes %}
+                            <tr>
+                                <td colspan="6" class="empty-row">No se encontraron registros.</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Gráfica de dona (solo membresías vigentes)
+    if (typeof Chart !== 'undefined') {
+        const ctx = document.getElementById('graficaMembresias').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Mensual', 'Trimestral', 'Anual', 'VIP'],
+                datasets: [{
+                    data: [{{ stats['Mensual'] }}, {{ stats['Trimestral'] }}, {{ stats['Anual'] }}, {{ stats['VIP'] }}],
+                    backgroundColor: ['#71717a', '#3b82f6', '#10b981', '#f59e0b'],
+                    borderColor: '#131318',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#e4e4e7', padding: 14 } }
+                }
+            }
+        });
+    }
+
+    // Filtros rápidos tipo chip
+    function filtrarChip(tipo, btn) {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+
+        const filas = document.querySelectorAll('.fila-socio');
+        let visibles = 0;
+        filas.forEach(fila => {
+            const estado = fila.getAttribute('data-estado');
+            const esVigente = fila.getAttribute('data-vigente') === 'si';
+            const mostrar = (tipo === 'todos') || (tipo === 'vigente' ? esVigente : estado === tipo);
+
+            if (mostrar) {
+                fila.style.display = '';
+                visibles++;
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+
+        const contador = document.getElementById('contadorVisible');
+        if (contador) contador.textContent = `${visibles} registros`;
+    }
+
+    // Copiar código de acceso al portapapeles
+    function copiarCodigo(codigo, nombre) {
+        navigator.clipboard.writeText(codigo).then(() => {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: `Código ${codigo} de ${nombre} copiado`,
+                    showConfirmButton: false,
+                    timer: 2200,
+                    background: '#131318',
+                    color: '#f4f4f5'
+                });
+            }
+        });
+    }
+
+    // Renovación rápida con selección de método de pago
+    function confirmarRenovacion(id, nombre, plan) {
+        const precios = { 'MENSUAL': 350, 'TRIMESTRAL': 950, 'ANUAL': 3400, 'VIP': 7500 };
+        const monto = precios[plan.trim().toUpperCase()] || 350;
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: `Renovar a ${nombre}`,
+                text: `Plan ${plan} — $${monto.toLocaleString()} MXN. Elige el método de pago:`,
+                input: 'select',
+                inputOptions: {
+                    'Efectivo': 'Efectivo',
+                    'Tarjeta': 'Tarjeta',
+                    'Transferencia': 'Transferencia'
+                },
+                inputValue: 'Efectivo',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#3f3f46',
+                confirmButtonText: 'Confirmar Cobro',
+                cancelButtonText: 'Cancelar',
+                background: '#131318',
+                color: '#f4f4f5'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `/renovar/${id}?metodo=${encodeURIComponent(result.value)}`;
+                }
+            });
+        } else if (confirm(`¿Renovar plan ${plan} ($${monto} MXN) de ${nombre} hoy?`)) {
+            window.location.href = `/renovar/${id}?metodo=Efectivo`;
+        }
+    }
+
+    // Baja lógica (Soft Delete)
+    function confirmarBaja(id) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '¿Dar de baja al socio?',
+                text: "El cliente pasará a Inactivo, pero su historial de pagos se conservará.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff003c',
+                cancelButtonColor: '#3f3f46',
+                confirmButtonText: 'Sí, dar de baja',
+                cancelButtonText: 'Cancelar',
+                background: '#131318',
+                color: '#f4f4f5'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `/borrar/${id}`;
+                }
+            });
+        } else if (confirm('¿Dar de baja al socio?')) {
+            window.location.href = `/borrar/${id}`;
+        }
+    }
+</script>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <script>
+      {% for category, message in messages %}
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: '{{ "success" if category == "success" else "error" }}',
+                title: 'Sistema',
+                text: '{{ message }}',
+                background: '#131318',
+                color: '#f4f4f5',
+                confirmButtonColor: '#ff003c'
+            });
+        }
+      {% endfor %}
+    </script>
+  {% endif %}
+{% endwith %}
+
+</body>
+</html>

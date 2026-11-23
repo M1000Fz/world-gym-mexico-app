@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - World Gym Brayan</title>
+    <!-- CDN ANTI-BLOQUEO: Usando Cloudflare para el tema oscuro -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.0/darkly/bootstrap.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+      /* Forzar el rojo vibrante de World Gym y sombras neón sobre el tema oscuro */
+      .bg-danger, .btn-danger { 
+          background-color: #ff003c !important; 
+          border-color: #ff003c !important; 
+          color: #ffffff !important; 
+          font-weight: bold;
+      }
+      .btn-danger:hover {
+          background-color: #cc0030 !important;
+          box-shadow: 0 0 15px rgba(255, 0, 51, 0.6) !important;
+      }
+      .text-danger { color: #ff003c !important; }
+      .border-danger { border-color: #ff003c !important; }
+      
+      .card { 
+          background-color: #1e1e1e !important;
+          border: 1px solid #333 !important;
+          border-radius: 12px !important;
+          box-shadow: 0 8px 25px rgba(255, 0, 51, 0.15) !important; 
+      }
+      .card-header { border-bottom: 1px solid #333 !important; }
+      
+      /* Quitar estilo nativo de Mac en inputs */
+      input, select, .form-control, .form-select {
+        appearance: none !important;
+        background-color: #2a2a2a !important;
+        color: #ffffff !important;
+      }
+    </style>
+</head>
+<body class="bg-dark text-white">
+
+<div class="container-fluid p-4">
+    <!-- NAVEGACIÓN SUPERIOR -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-danger fw-bold" style="letter-spacing: 1px;"><i class="fas fa-dumbbell"></i> World Gym Mexico</h2>
+        <div>
+            <a href="/exportar" class="btn btn-success"><i class="fas fa-file-csv"></i> CSV</a>
+            <a href="/notificar_vencimientos" class="btn btn-warning text-dark fw-bold"><i class="fas fa-bell"></i> Alertas</a>
+            <a href="/logout" class="btn btn-outline-danger"><i class="fas fa-sign-out-alt"></i> Salir</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- COLUMNA IZQUIERDA: FORMULARIO -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white fw-bold">NUEVO SOCIO</div>
+                <div class="card-body">
+                    <form action="/agregar" method="POST">
+                        <div class="mb-3"><input type="text" name="nombre" class="form-control border-secondary" placeholder="Nombre" required></div>
+                        <div class="mb-3"><input type="text" name="apellido" class="form-control border-secondary" placeholder="Apellido" required></div>
+                        <div class="mb-3"><input type="email" name="email" class="form-control border-secondary" placeholder="Correo" required></div>
+                        <div class="mb-3"><input type="text" name="telefono" class="form-control border-secondary" placeholder="Teléfono"></div>
+                        <div class="mb-3">
+                            <select name="membresia" class="form-select border-secondary" required>
+                                <option value="Mensual">Mensual</option>
+                                <option value="Trimestral">Trimestral</option>
+                                <option value="Anual">Anual</option>
+                                <option value="VIP">VIP</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 fw-bold">Registrar</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- GRÁFICA -->
+            <div class="card">
+                <div class="card-header bg-dark fw-bold text-white border-bottom border-secondary">Membresías Activas</div>
+                <div class="card-body bg-dark text-center">
+                    <canvas id="graficaMembresias" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: TABLA Y BUSCADOR -->
+        <div class="col-md-8">
+            
+            <!-- BARRA DE BÚSQUEDA Y FILTROS INTELIGENTES -->
+            <form action="/panel_admin" method="GET" class="d-flex mb-4 gap-2">
+                <input type="text" name="q" class="form-control border-danger" placeholder="Buscar por nombre, apellido o correo..." value="{{ request.args.get('q', '') }}">
+                
+                <select name="estatus" class="form-select border-danger" style="width: 200px;">
+                    <option value="Activo" {% if request.args.get('estatus') == 'Activo' %}selected{% endif %}>Mostrar Activos</option>
+                    <option value="Inactivo" {% if request.args.get('estatus') == 'Inactivo' %}selected{% endif %}>Mostrar Inactivos</option>
+                </select>
+                
+                <button type="submit" class="btn btn-danger fw-bold"><i class="fas fa-search"></i> Filtrar</button>
+                <a href="/panel_admin" class="btn btn-outline-light"><i class="fas fa-sync-alt"></i> Limpiar</a>
+            </form>
+
+            <div class="card">
+                <div class="card-header bg-danger text-white fw-bold">DIRECTORIO DE SOCIOS</div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-dark table-striped table-hover m-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Socio</th>
+                                <th>Contacto</th>
+                                <th>Plan</th>
+                                <th>Vigencia</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in clientes %}
+                            <tr>
+                                <td>{{ c[0] }}</td>
+                                <td>{{ c[1] }} {{ c[2] }}</td>
+                                <td>{{ c[3] }}<br><small class="text-secondary">{{ c[4] }}</small></td>
+                                <td>
+                                    <span class="badge {% if c[5] == 'VIP' %}bg-warning text-dark{% elif c[5] == 'Anual' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                        {{ c[5] }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if c[5] == 'VIP' %}
+                                        <span class="text-warning"><i class="fas fa-infinity"></i></span>
+                                    {% elif c[6] <= 0 %}
+                                        <span class="text-danger fw-bold">VENCIDO</span>
+                                    {% elif c[6] <= 5 %}
+                                        <span class="text-danger">{{ c[6] }} días</span>
+                                    {% else %}
+                                        <span class="text-success">{{ c[6] }} días</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="/editar/{{ c[0] }}" class="btn btn-sm btn-primary" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <button class="btn btn-sm btn-danger" onclick="confirmarBaja({{ c[0] }})" title="Dar de Baja"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not clientes %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No se encontraron registros.</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Inicializar Chart.js
+    const ctx = document.getElementById('graficaMembresias').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Mensual', 'Trimestral', 'Anual', 'VIP'],
+            datasets: [{
+                data: [{{ stats['Mensual'] }}, {{ stats['Trimestral'] }}, {{ stats['Anual'] }}, {{ stats['VIP'] }}],
+                backgroundColor: ['#6c757d', '#0d6efd', '#198754', '#ffc107'],
+                borderColor: '#222',
+                borderWidth: 2
+            }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }, maintainAspectRatio: false }
+    });
+
+    // Alerta de confirmación para Soft Delete
+    function confirmarBaja(id) {
+        Swal.fire({
+            title: '¿Dar de baja al socio?',
+            text: "El cliente pasará a Inactivo, pero su historial de pagos se conservará.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ff003c',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, dar de baja',
+            cancelButtonText: 'Cancelar',
+            background: '#1e1e1e', color: '#e0e0e0'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = `/borrar/${id}`;
+            }
+        });
+    }
+</script>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <script>
+      {% for category, message in messages %}
+        Swal.fire({ 
+            icon: '{{ "success" if category == "success" else "error" }}', 
+            title: 'Sistema', 
+            text: '{{ message }}', 
+            background: '#1e1e1e', color: '#e0e0e0', confirmButtonColor: '#ff003c' 
+        });
+      {% endfor %}
+    </script>
+  {% endif %}
+{% endwith %}
+
+</body>
+</html>

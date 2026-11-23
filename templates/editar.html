@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Editar Cliente - World Gym Mexico</title>
+    <style>
+        :root {
+            --bg-main: #09090b;
+            --bg-card: #131318;
+            --bg-input: #1c1c24;
+            --border: #272732;
+            --red: #ff003c;
+            --red-hover: #d90033;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(circle at top center, rgba(255, 0, 60, 0.14), transparent 45%);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 680px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+        }
+
+        .card-header {
+            padding: 18px 24px;
+            background: rgba(255, 0, 60, 0.12);
+            border-bottom: 1px solid var(--border);
+            border-left: 4px solid var(--red);
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .card-body { padding: 28px 24px; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
+
+        .full { grid-column: 1 / -1; }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(255, 0, 60, 0.2);
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23a1a1aa' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 0, 60, 0.2);
+            color: #ff4d79;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            margin-left: 6px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 26px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 11px 22px;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel { background: transparent; color: var(--text-muted); border-color: var(--border); }
+        .btn-cancel:hover { color: #fff; border-color: var(--text-muted); }
+
+        .btn-save {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(255, 0, 60, 0.35);
+        }
+        .btn-save:hover { background: var(--red-hover); transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="card-header">
+        ✏️ Editar Cliente (ID: {{ cliente[0] }})
+    </div>
+    <div class="card-body">
+        <form action="/editar/{{ cliente[0] }}" method="POST">
+            <div class="form-grid">
+                <div>
+                    <label>Nombre</label>
+                    <input type="text" name="nombre" value="{{ cliente[1] }}" required>
+                </div>
+                <div>
+                    <label>Apellido</label>
+                    <input type="text" name="apellido" value="{{ cliente[2] }}" required>
+                </div>
+                <div>
+                    <label>Email</label>
+                    <input type="email" name="email" value="{{ cliente[3] if cliente[3] != 'None' and cliente[3] != None else '' }}">
+                </div>
+                <div>
+                    <label>Teléfono</label>
+                    <input type="text" name="telefono" value="{{ cliente[4] if cliente[4] != 'None' and cliente[4] != None else '' }}">
+                </div>
+                <div class="full">
+                    <label>Membresía actual <span class="badge">{{ cliente[5] }}</span></label>
+                    <select name="membresia">
+                        <option value="Mensual" {% if cliente[5] == 'Mensual' %}selected{% endif %}>Mensual</option>
+                        <option value="Trimestral" {% if cliente[5] == 'Trimestral' %}selected{% endif %}>Trimestral</option>
+                        <option value="Anual" {% if cliente[5] == 'Anual' %}selected{% endif %}>Anual</option>
+                        <option value="VIP" {% if cliente[5] == 'VIP' %}selected{% endif %}>VIP</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="/panel_admin" class="btn btn-cancel">Cancelar</a>
+                <button type="submit" class="btn btn-save">Actualizar Datos</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
